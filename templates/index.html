@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bharat Pashudhan App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 900px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #app-container {
+            display: none;
+        }
+        #login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Login Page -->
+    <div id="login-container" class="w-full flex justify-center items-center">
+        <div class="card p-8 w-full max-w-md">
+            <header class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-blue-700 mb-2">Bharat Pashudhan App</h1>
+                <p class="text-sm text-gray-500">Ministry of Fisheries</p>
+            </header>
+            <p class="text-center text-gray-600 mb-8">Please enter your login ID to continue.</p>
+            <div class="flex flex-col gap-4">
+                <input id="login-id" type="text" placeholder="Enter your Login ID" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="login-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-300 transform active:scale-95">Login</button>
+                <div id="login-error-message" class="text-red-500 text-center mt-2 hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app-container" class="container mx-auto p-6 flex flex-col items-center">
+
+        <div class="card p-8 w-full">
+            <header class="text-center mb-6">
+                <h1 class="text-4xl font-extrabold text-blue-700 mb-2">Bharat Pashudhan App</h1>
+                <p class="text-sm text-gray-500">A Project by the Ministry of Fisheries</p>
+            </header>
+            
+            <p class="text-center text-gray-600 mb-8">AI-Driven solution for accurate breed identification of Indian cattle and buffaloes to assist Field Level Workers (FLWs).</p>
+            
+            <div class="flex flex-col md:flex-row gap-6">
+                <!-- Image Upload and Preview Section -->
+                <div class="flex-1 flex flex-col items-center">
+                    <label for="file-upload" class="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-full transition-colors duration-300">
+                        Upload Animal Image
+                    </label>
+                    <input id="file-upload" type="file" class="hidden" accept="image/*">
+                    <p class="text-sm text-gray-500 mt-2">.jpg, .png, .gif</p>
+                    
+                    <div id="image-preview" class="mt-6 w-full max-w-sm h-64 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center text-gray-400 overflow-hidden">
+                        <span id="preview-text">Image Preview</span>
+                    </div>
+                </div>
+
+                <!-- Recognition and Results Section -->
+                <div class="flex-1 flex flex-col items-center md:items-start">
+                    <button id="recognize-button" class="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-300 transform active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        <span id="button-text">Recognize Breed</span>
+                        <div id="loading-spinner" class="spinner hidden"></div>
+                    </button>
+                    
+                    <div id="results-container" class="mt-8 w-full text-center md:text-left hidden">
+                        <h2 class="text-2xl font-semibold mb-2">Recognition Result</h2>
+                        <div id="result-content" class="p-6 bg-gray-100 rounded-xl">
+                            <p class="text-lg font-medium text-gray-800" id="breed-result"></p>
+                            <p class="text-gray-600 mt-2" id="confidence-result"></p>
+                            <button id="details-button" class="mt-4 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-full transition-colors duration-300 transform active:scale-95">View Details</button>
+                            <div id="training-section" class="mt-6 flex flex-col gap-2">
+                                <label for="training-breed-select" class="text-sm font-semibold">Correct Breed (for training):</label>
+                                <select id="training-breed-select" class="w-full px-4 py-2 rounded-lg border border-gray-300"></select>
+                                <button id="train-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300 transform active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                    Train Model
+                                </button>
+                                <div id="training-message" class="text-sm text-green-600 mt-2 hidden"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="error-message" class="mt-4 text-red-500 font-semibold hidden"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-8 p-8 w-full">
+            <h2 class="text-3xl font-bold text-center mb-6">Common Indian Breeds</h2>
+            <div id="breed-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Breed cards will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-gray-500 text-sm w-full max-w-2xl">
+            <p>This is a proof-of-concept for an AI-driven decision-support tool to assist Field Level Workers in correctly identifying cattle and buffalo breeds, thereby improving the quality of data recorded for the Bharat Pashudhan App.</p>
+        </div>
+    </div>
+    
+    <!-- Breed Details Modal -->
+    <div id="details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2 id="modal-title" class="text-2xl font-bold mb-4"></h2>
+            <img id="modal-image" class="w-full rounded-lg mb-4" src="" alt="Breed Image">
+            <p id="modal-description" class="text-gray-700 mb-2"></p>
+            <p id="modal-origin" class="text-gray-700 mb-2"></p>
+            <p id="modal-characteristics" class="text-gray-700 mb-2"></p>
+            <p id="modal-milkyield" class="text-gray-700"></p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        setLogLevel('Debug');
+
+        const __app_id = "your-app-id";
+        const __firebase_config = '{}';
+        const __initial_auth_token = "your-auth-token";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+        let db, auth;
+        if (Object.keys(firebaseConfig).length > 0) {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } else {
+            console.error("Firebase is not configured. Data will not be saved.");
+        }
+
+        const fileUpload = document.getElementById('file-upload');
+        const imagePreview = document.getElementById('image-preview');
+        const previewText = document.getElementById('preview-text');
+        const recognizeButton = document.getElementById('recognize-button');
+        const resultsContainer = document.getElementById('results-container');
+        const breedResult = document.getElementById('breed-result');
+        const confidenceResult = document.getElementById('confidence-result');
+        const detailsButton = document.getElementById('details-button');
+        const errorMessage = document.getElementById('error-message');
+        const buttonText = document.getElementById('button-text');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const breedCardsContainer = document.getElementById('breed-cards');
+        const trainingBreedSelect = document.getElementById('training-breed-select');
+        const trainButton = document.getElementById('train-button');
+        const trainingMessage = document.getElementById('training-message');
+
+        const detailsModal = document.getElementById('details-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalImage = document.getElementById('modal-image');
+        const modalDescription = document.getElementById('modal-description');
+        const modalOrigin = document.getElementById('modal-origin');
+        const modalCharacteristics = document.getElementById('modal-characteristics');
+        const modalMilkyield = document.getElementById('modal-milkyield');
+        const closeButton = document.querySelector('.close-button');
+
+        const loginContainer = document.getElementById('login-container');
+        const appContainer = document.getElementById('app-container');
+        const loginIdInput = document.getElementById('login-id');
+        const loginButton = document.getElementById('login-button');
+        const loginErrorMessage = document.getElementById('login-error-message');
+
+        let uploadedImageBase64 = null;
+        let lastRecognizedBreed = null;
+        let userId = null;
+
+        const breedData = {
+            "Sahiwal": {
+                type: "Cattle",
+                image: "https://tse4.mm.bing.net/th/id/OIP.UVvLIz_yhr_53VEeePsccAHaDt?pid=Api&P=0&h=180",
+                description: "Known as the best indigenous dairy breed, famous for its high milk production and heat tolerance.",
+                origin: "Originated in the Montgomery district of modern-day Pakistan, widely found in Punjab and Haryana.",
+                characteristics: "Reddish-dun or pale red coat, loose skin, and a large hump.",
+                milkyield: "Average milk yield of 2,500-3,000 liters per lactation."
+            },
+            "Gir": {
+                type: "Cattle",
+                image: "https://tse2.mm.bing.net/th/id/OIP.qhLRftmT9bzXQ-wML9BsKwHaF5?pid=Api&P=0&h=180",
+                description: "A famous milch breed known for its distinctive appearance and high milk yield, also used for draught work.",
+                origin: "Originating from the Gir forests of Gujarat.",
+                characteristics: "Red or chocolate-brown with white patches, a rounded forehead, and peculiar curved horns.",
+                milkyield: "Average milk yield of 1,200-1,800 kgs per lactation."
+            },
+            "Red Sindhi": {
+                type: "Cattle",
+                image: "https://tse3.mm.bing.net/th/id/OIP.5WSh0_RQtHwqCzMXXNOKIQHaFj?pid=Api&P=0&h=180",
+                description: "A popular milch breed valued for its high milk yield and adaptability to harsh climates.",
+                origin: "Originally from the Sindh region of Pakistan, now popular across India.",
+                characteristics: "Uniform red coat, varying from a dark shade to a light one.",
+                milkyield: "Average milk yield of 1,100-2,600 kgs per lactation."
+            },
+            "Murrah": {
+                type: "Buffalo",
+                image: "https://tse4.mm.bing.net/th/id/OIP.vjfQ5TWYG9kWAg8YmC0G-gHaEs?pid=Api&P=0&h=180",
+                description: "The most famous and efficient buffalo breed in India, known as the 'black gold'.",
+                origin: "Native to the Haryana and Delhi regions.",
+                characteristics: "Jet black coat, tightly coiled horns, and a massive body.",
+                milkyield: "Average milk yield of 1,500-2,500 kgs per lactation with high butterfat content."
+            },
+            "Jaffarabadi": {
+                type: "Buffalo",
+                image: "https://tse2.mm.bing.net/th/id/OIP.kSdDds0qi5-G3mvx6JblogHaEG?pid=Api&P=0&h=180",
+                description: "A heavy and strong buffalo breed known for its prominent forehead and powerful build.",
+                origin: "Found in the Gir forests and coastal areas of Gujarat.",
+                characteristics: "Massive head and neck, drooping horns that curl upwards at the tip.",
+                milkyield: "Average milk yield of 1,000-1,200 kgs per lactation."
+            },
+            "Hariana": {
+                type: "Cattle",
+                image: "https://tse4.mm.bing.net/th/id/OIP.fSkcWJHj4Mul8-UR8EyoawAAAA?pid=Api&P=0&h=180",
+                description: "A dual-purpose breed, providing both milk and excellent draught power.",
+                origin: "Originating from the Rohtak, Hisar, and Jind districts of Haryana.",
+                characteristics: "Small horns and well-developed physique, typically white or light grey in color.",
+                milkyield: "Average milk yield of 600-800 kgs per lactation."
+            },
+            "Kankrej": {
+                type: "Cattle",
+                image: "https://tse3.mm.bing.net/th/id/OIP.c2CsZ8kaZN8X_3zVAhTSGAHaG_?pid=Api&P=0&h=180",
+                description: "A dual-purpose breed known for its fast, powerful gait ('sawai chal') and strength.",
+                origin: "Found in the Southeast Rann of Kutch region of Gujarat.",
+                characteristics: "Silver-grey to iron-grey coat, large body, and lyre-shaped horns.",
+                milkyield: "Cows are good milkers, yielding around 1,360 kgs per lactation."
+            },
+            "Tharparkar": {
+                type: "Cattle",
+                image: "https://tse4.mm.bing.net/th/id/OIP.mYrg6tTR7t0BW9L9Ssu_2wHaF4?pid=Api&P=0&h=180",
+                description: "A dual-purpose breed valued for both milk production and draught work, and its disease resistance.",
+                origin: "Originally from the Tharparkar district of Pakistan, now found in Rajasthan.",
+                characteristics: "Body color is white or light grey, with short and thick horns.",
+                milkyield: "Average milk yield of 1,800-2,600 kgs per lactation."
+            },
+            "Bhadawari": {
+                type: "Buffalo",
+                image: "https://tse1.mm.bing.net/th/id/OIP.sOlcgrMnfKBaYidsZLqK8QHaE1?pid=Api&P=0&h=180",
+                description: "A buffalo breed known for its unique copper-colored coat and high butterfat content in milk.",
+                origin: "Native to the Yamuna and Chambal riverine tracts of Uttar Pradesh and Madhya Pradesh.",
+                characteristics: "Wedge-shaped body, light or copper-colored coat, and two white lines ('Chevron') at the base of the neck.",
+                milkyield: "Milk fat content can be as high as 12.5%."
+            },
+            "Nagpuri": {
+                type: "Buffalo",
+                image: "https://tse4.mm.bing.net/th/id/OIP.CRrjeAdJxIyL2uSrB2kC5gHaEl?pid=Api&P=0&h=180",
+                description: "A buffalo breed known for its long, sword-shaped horns.",
+                origin: "Native to the Nagpur, Akola, and Amravati districts of Maharashtra.",
+                characteristics: "Predominantly black, with white patches on the face, legs, and tail.",
+                milkyield: "Average milk yield of 700-1,200 kgs per lactation."
+            }
+        };
+
+        // Login Logic
+        loginButton.addEventListener('click', async () => {
+            const loginId = loginIdInput.value.trim();
+            if (loginId !== '') {
+                if (auth) {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined') {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                        userId = auth.currentUser?.uid || crypto.randomUUID();
+                        loginContainer.style.display = 'none';
+                        appContainer.style.display = 'flex';
+                        populateBreedCards();
+                        populateTrainingSelect();
+                    } catch (error) {
+                        console.error("Firebase Authentication Error:", error);
+                        loginErrorMessage.textContent = "Authentication failed. Please try again.";
+                        loginErrorMessage.classList.remove('hidden');
+                    }
+                } else {
+                    userId = loginId;
+                    loginContainer.style.display = 'none';
+                    appContainer.style.display = 'flex';
+                    populateBreedCards();
+                    populateTrainingSelect();
+                }
+            } else {
+                loginErrorMessage.textContent = 'Please enter a valid Login ID.';
+                loginErrorMessage.classList.remove('hidden');
+            }
+        });
+
+        function populateBreedCards() {
+            Object.keys(breedData).forEach(breed => {
+                breedCardsContainer.appendChild(createBreedCard(breed, breedData[breed]));
+            });
+        }
+
+        function populateTrainingSelect() {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "Select Correct Breed";
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            trainingBreedSelect.appendChild(defaultOption);
+            Object.keys(breedData).forEach(breed => {
+                const option = document.createElement('option');
+                option.value = breed;
+                option.textContent = breed;
+                trainingBreedSelect.appendChild(option);
+            });
+        }
+
+        // Main App Logic
+        function createBreedCard(breedName, data) {
+            const card = document.createElement('div');
+            card.className = 'bg-gray-100 p-6 rounded-xl flex flex-col items-center text-center transition-transform transform hover:scale-105 cursor-pointer';
+            card.innerHTML = `
+                <img src="${data.image}" alt="${breedName}" class="w-full h-40 object-cover rounded-lg mb-4">
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">${breedName}</h3>
+                <p class="text-sm text-gray-500 mb-2">${data.type}</p>
+                <p class="text-gray-700">${data.description}</p>
+            `;
+            card.addEventListener('click', () => {
+                showBreedDetails(breedName, data);
+            });
+            return card;
+        }
+
+        fileUpload.addEventListener('change', handleFileSelect);
+        recognizeButton.addEventListener('click', recognizeBreed);
+        detailsButton.addEventListener('click', () => showBreedDetails(lastRecognizedBreed, breedData[lastRecognizedBreed]));
+        closeButton.addEventListener('click', () => detailsModal.style.display = 'none');
+        window.onclick = function(event) {
+            if (event.target == detailsModal) {
+                detailsModal.style.display = 'none';
+            }
+        }
+        trainButton.addEventListener('click', async () => {
+            const selectedBreed = trainingBreedSelect.value;
+            if (!selectedBreed || !uploadedImageBase64) {
+                trainingMessage.textContent = 'Please select a breed and upload an image first.';
+                trainingMessage.classList.add('text-red-500', 'font-semibold');
+                trainingMessage.classList.remove('hidden', 'text-green-600');
+                return;
+            }
+
+            if (!db || !userId) {
+                trainingMessage.textContent = 'Database not configured or user not logged in.';
+                trainingMessage.classList.add('text-red-500', 'font-semibold');
+                trainingMessage.classList.remove('hidden', 'text-green-600');
+                return;
+            }
+
+            try {
+                const trainRef = collection(db, `artifacts/${appId}/users/${userId}/training_data`);
+
+                await addDoc(trainRef, {
+                    breed: selectedBreed,
+                    imageData: uploadedImageBase64,
+                    timestamp: new Date()
+                });
+               trainingMessage.textContent = `Training data for ${selectedBreed} submitted successfully!`;
+
+                trainingMessage.classList.add('text-green-600', 'font-semibold');
+                trainingMessage.classList.remove('hidden', 'text-red-500');
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                trainingMessage.textContent = "Error submitting training data. Please check the console.";
+                trainingMessage.classList.add('text-red-500', 'font-semibold');
+                trainingMessage.classList.remove('hidden', 'text-green-600');
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImageBase64 = e.target.result.split(',')[1];
+                    
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.className = 'w-full h-full object-cover rounded-xl';
+                    imagePreview.innerHTML = '';
+                    imagePreview.appendChild(img);
+                    
+                    previewText.classList.add('hidden');
+                    resultsContainer.classList.add('hidden');
+                    errorMessage.classList.add('hidden');
+                    recognizeButton.disabled = false;
+                    trainingMessage.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                uploadedImageBase64 = null;
+                imagePreview.innerHTML = '<span id="preview-text">Invalid file type. Please upload an image.</span>';
+                recognizeButton.disabled = true;
+            }
+        }
+
+        async function recognizeBreed() {
+            if (!uploadedImageBase64) {
+                errorMessage.textContent = 'Please upload an image first.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            // Show loading state
+            recognizeButton.disabled = true;
+            buttonText.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+            resultsContainer.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            
+            const prompt = "Analyze the image of the cattle or buffalo. Identify the breed and provide a confidence score as a percentage. Respond ONLY with the breed name and confidence score, for example: 'Breed: Sahiwal, Confidence: 95%'. If you cannot identify the breed, say 'Breed: Unknown'.";
+
+            const payload = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: prompt },
+                            {
+                                inlineData: {
+                                    mimeType: "image/jpeg",
+                                    data: uploadedImageBase64
+                                }
+                            }
+                        ]
+                    }
+                ],
+            };
+            
+            const apiKey = "AIzaSyCRKf9Yrbts_kHgocF2kTJr68i1a7HDEZk";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                   throw new Error(`API error: ${response.status} ${response.statusText}`);
+
+                }
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const responseText = candidate.content.parts[0].text;
+                    const lines = responseText.split('\n');
+                    let breed = "Unknown";
+                    let confidence = "N/A";
+
+                    lines.forEach(line => {
+                        if (line.includes("Breed:")) {
+                            breed = line.replace("Breed:", "").trim();
+                        }
+                        if (line.includes("Confidence:")) {
+                            confidence = line.replace("Confidence:", "").trim();
+                        }
+                    });
+
+                    lastRecognizedBreed = breed;
+                   breedResult.textContent = `Breed: ${breed}`;
+confidenceResult.textContent = `Confidence: ${confidence}`;
+
+                    resultsContainer.classList.remove('hidden');
+                    
+                    if (breedData[lastRecognizedBreed]) {
+                        detailsButton.classList.remove('hidden');
+                    } else {
+                        detailsButton.classList.add('hidden');
+                    }
+
+                } else {
+                    throw new Error("Invalid API response format.");
+                }
+
+            } catch (error) {
+                console.error("Error during API call:", error);
+               errorMessage.textContent = `Error: ${error.message}. Please try again.`;
+
+                errorMessage.classList.remove('hidden');
+                breedResult.textContent = "";
+                confidenceResult.textContent = "";
+                detailsButton.classList.add('hidden');
+
+            } finally {
+                // Hide loading state
+                recognizeButton.disabled = false;
+                buttonText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        function showBreedDetails(breedName, data) {
+            modalTitle.textContent = breedName;
+            modalImage.src = data.image;
+           modalDescription.textContent = `Description: ${data.description}`;
+modalOrigin.textContent = `Origin: ${data.origin}`;
+modalCharacteristics.textContent = `Characteristics: ${data.characteristics}`;
+modalMilkyield.textContent = `Milk Yield: ${data.milkyield}`;
+
+            detailsModal.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
